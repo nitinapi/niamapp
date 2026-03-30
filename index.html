@@ -30,6 +30,8 @@
         padding: 48px 64px;
         text-align: center;
         box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+        max-width: 560px;
+        width: 100%;
       }
 
       h1 {
@@ -60,76 +62,208 @@
       button:active {
         transform: scale(0.97);
       }
+
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+
+      .divider {
+        border: none;
+        border-top: 1px solid #e2e8f0;
+        margin: 32px 0;
+      }
+
+      .activities-title {
+        font-size: 0.8rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #718096;
+        margin-bottom: 16px;
+      }
+
+      .activity-card {
+        background: #f7f8ff;
+        border: 1px solid #e0e4ff;
+        border-radius: 10px;
+        padding: 16px 20px;
+        text-align: left;
+        margin-bottom: 12px;
+      }
+
+      .activity-card:last-child {
+        margin-bottom: 0;
+      }
+
+      .activity-name {
+        font-weight: 600;
+        color: #1a202c;
+        margin-bottom: 4px;
+        font-size: 0.95rem;
+      }
+
+      .activity-desc {
+        color: #4a5568;
+        font-size: 0.85rem;
+        line-height: 1.5;
+        margin-bottom: 8px;
+      }
+
+      .activity-link {
+        font-size: 0.8rem;
+        color: #6366f1;
+        text-decoration: none;
+      }
+
+      .activity-link:hover {
+        text-decoration: underline;
+      }
+
+      .activities-loading {
+        color: #a0aec0;
+        font-size: 0.9rem;
+        padding: 12px 0;
+      }
+
+      .error-text {
+        font-size: 0.85rem;
+        color: #e53e3e;
+        margin-top: 12px;
+      }
     </style>
   </head>
   <body>
     <div id="root"></div>
 
     <script type="text/babel">
-      const API_URL = "http://localhost:8080/api/names";
+      const NAMES_URL      = "http://localhost:8080/api/names";
+      const ACTIVITIES_URL = "http://localhost:8080/api/activities";
 
-      // Proto schema mirrored from names.proto — must stay in sync with the backend
-      const PROTO_SCHEMA = `
+      // Proto schemas — must stay in sync with the .proto files in the backend
+      const NAMES_SCHEMA = `
         syntax = "proto3";
         message NamesResponse {
           repeated string names = 1;
         }
       `;
 
+      const ACTIVITIES_SCHEMA = `
+        syntax = "proto3";
+        message Activity {
+          string name = 1;
+          string description = 2;
+          string url = 3;
+        }
+        message ActivitiesResponse {
+          repeated Activity activities = 1;
+        }
+      `;
+
       async function fetchNames() {
-        const root = protobuf.parse(PROTO_SCHEMA).root;
+        const root = protobuf.parse(NAMES_SCHEMA).root;
         const NamesResponse = root.lookupType("NamesResponse");
-
-        const res = await fetch(API_URL, {
-          headers: { Accept: "application/x-protobuf" },
-        });
+        const res = await fetch(NAMES_URL, { headers: { Accept: "application/x-protobuf" } });
         if (!res.ok) throw new Error("Failed to fetch names");
-
         const buffer = await res.arrayBuffer();
-        const decoded = NamesResponse.decode(new Uint8Array(buffer));
-        return decoded.names;
+        return NamesResponse.decode(new Uint8Array(buffer)).names;
+      }
+
+      async function fetchActivities() {
+        const root = protobuf.parse(ACTIVITIES_SCHEMA).root;
+        const ActivitiesResponse = root.lookupType("ActivitiesResponse");
+        const res = await fetch(ACTIVITIES_URL, { headers: { Accept: "application/x-protobuf" } });
+        if (!res.ok) throw new Error("Failed to fetch activities");
+        const buffer = await res.arrayBuffer();
+        return ActivitiesResponse.decode(new Uint8Array(buffer)).activities;
+      }
+
+      function ActivityCard({ activity }) {
+        return (
+          <div className="activity-card">
+            <div className="activity-name">{activity.name}</div>
+            {activity.description && (
+              <div className="activity-desc">{activity.description}</div>
+            )}
+            {activity.url && (
+              <a className="activity-link" href={activity.url} target="_blank" rel="noreferrer">
+                Learn more →
+              </a>
+            )}
+          </div>
+        );
       }
 
       function App() {
-        const [names, setNames] = React.useState([]);
-        const [nameIndex, setNameIndex] = React.useState(0);
-        const [error, setError] = React.useState(null);
-        const [loading, setLoading] = React.useState(true);
+        const [names, setNames]                       = React.useState([]);
+        const [nameIndex, setNameIndex]               = React.useState(0);
+        const [namesError, setNamesError]             = React.useState(null);
+        const [namesLoading, setNamesLoading]         = React.useState(true);
 
+        const [activities, setActivities]             = React.useState([]);
+        const [activitiesError, setActivitiesError]   = React.useState(null);
+        const [activitiesLoading, setActivitiesLoading] = React.useState(true);
+
+        // Load names once on mount
         React.useEffect(() => {
           fetchNames()
-            .then((data) => {
-              setNames(data);
-              setLoading(false);
-            })
-            .catch((err) => {
-              setError(err.message);
-              setLoading(false);
-            });
+            .then((data) => { setNames(data); setNamesLoading(false); })
+            .catch((err) => { setNamesError(err.message); setNamesLoading(false); });
         }, []);
+
+        // Load activities on mount
+        React.useEffect(() => { refreshActivities(); }, []);
+
+        function refreshActivities() {
+          setActivitiesLoading(true);
+          setActivitiesError(null);
+          fetchActivities()
+            .then((data) => { setActivities(data); setActivitiesLoading(false); })
+            .catch((err) => { setActivitiesError(err.message); setActivitiesLoading(false); });
+        }
 
         function handleClick() {
           setNameIndex((prev) => (prev + 1) % names.length);
+          refreshActivities();
         }
 
         const currentName = names[nameIndex] ?? "";
+        const busy = namesLoading || activitiesLoading;
 
         return (
           <div className="card">
             <h1>
-              {loading && <span style={{color:"#aaa"}}>Loading...</span>}
-              {error && <span style={{color:"#e53e3e"}}>API error</span>}
-              {!loading && !error && <span>{currentName}</span>}
+              {namesLoading && <span style={{color:"#aaa"}}>Loading...</span>}
+              {namesError  && <span style={{color:"#e53e3e"}}>API error</span>}
+              {!namesLoading && !namesError && <span>{currentName}</span>}
               {" App"}
             </h1>
-            <button onClick={handleClick} disabled={loading || !!error || names.length === 0}>
-              Change Name
+
+            <button onClick={handleClick} disabled={busy || !!namesError || names.length === 0}>
+              {activitiesLoading ? "Refreshing…" : "Change Name"}
             </button>
-            {error && (
-              <p style={{marginTop:"16px", fontSize:"0.85rem", color:"#e53e3e"}}>
-                Could not reach backend. Is the Java server running?
-              </p>
+
+            {namesError && (
+              <p className="error-text">Could not reach backend. Is the Java server running?</p>
             )}
+
+            <hr className="divider" />
+
+            <div className="activities-title">Toddler Activities · Greater Seattle</div>
+
+            {activitiesLoading && <p className="activities-loading">Finding activities…</p>}
+
+            {activitiesError && (
+              <p className="error-text">Could not load activities: {activitiesError}</p>
+            )}
+
+            {!activitiesLoading && !activitiesError && activities.length === 0 && (
+              <p className="activities-loading">No activities found.</p>
+            )}
+
+            {!activitiesLoading && !activitiesError && activities.map((a, i) => (
+              <ActivityCard key={i} activity={a} />
+            ))}
           </div>
         );
       }

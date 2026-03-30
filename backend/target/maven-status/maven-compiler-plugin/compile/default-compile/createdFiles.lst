@@ -1,7 +1,16 @@
-com\niamapp\NiamController.class
 com\niamapp\NiamAppApplication.class
+com\niamapp\proto\ActivitiesProto$ActivityOrBuilder.class
 com\niamapp\proto\NiamProto$NamesResponse$1.class
 com\niamapp\proto\NiamProto$NamesResponse$Builder.class
+com\niamapp\proto\ActivitiesProto$Activity$1.class
 com\niamapp\proto\NiamProto$NamesResponseOrBuilder.class
 com\niamapp\proto\NiamProto$NamesResponse.class
 com\niamapp\proto\NiamProto.class
+com\niamapp\proto\ActivitiesProto$ActivitiesResponse.class
+com\niamapp\proto\ActivitiesProto$Activity$Builder.class
+com\niamapp\NiamController.class
+com\niamapp\proto\ActivitiesProto$ActivitiesResponseOrBuilder.class
+com\niamapp\proto\ActivitiesProto$Activity.class
+com\niamapp\proto\ActivitiesProto$ActivitiesResponse$1.class
+com\niamapp\proto\ActivitiesProto$ActivitiesResponse$Builder.class
+com\niamapp\proto\ActivitiesProto.class
