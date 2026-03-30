@@ -1,0 +1,10 @@
+syntax = "proto3";
+
+package niamapp;
+
+option java_package = "com.niamapp.proto";
+option java_outer_classname = "NiamProto";
+
+message NamesResponse {
+  repeated string names = 1;
+}

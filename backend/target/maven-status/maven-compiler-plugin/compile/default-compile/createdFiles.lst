@@ -1,2 +1,7 @@
-com\niamapp\NiamAppApplication.class
 com\niamapp\NiamController.class
+com\niamapp\NiamAppApplication.class
+com\niamapp\proto\NiamProto$NamesResponse$1.class
+com\niamapp\proto\NiamProto$NamesResponse$Builder.class
+com\niamapp\proto\NiamProto$NamesResponseOrBuilder.class
+com\niamapp\proto\NiamProto$NamesResponse.class
+com\niamapp\proto\NiamProto.class

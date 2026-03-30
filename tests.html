@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Niam App — Frontend Tests</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/qunit@2/qunit/qunit.css" />
+    <script src="https://cdn.jsdelivr.net/npm/qunit@2/qunit/qunit.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7/dist/protobuf.min.js"></script>
+  </head>
+  <body>
+    <div id="qunit"></div>
+    <div id="qunit-fixture"></div>
+
+    <script>
+      // ── Shared proto schema (mirrored from names.proto) ──────────────────────
+      const PROTO_SCHEMA = `
+        syntax = "proto3";
+        message NamesResponse {
+          repeated string names = 1;
+        }
+      `;
+
+      // ── Helper: encode a names array into protobuf bytes ─────────────────────
+      function encodeNames(names) {
+        const root = protobuf.parse(PROTO_SCHEMA).root;
+        const NamesResponse = root.lookupType("NamesResponse");
+        return NamesResponse.encode(NamesResponse.create({ names })).finish();
+      }
+
+      // ── Helper: decode protobuf bytes into a names array ─────────────────────
+      function decodeNames(bytes) {
+        const root = protobuf.parse(PROTO_SCHEMA).root;
+        const NamesResponse = root.lookupType("NamesResponse");
+        return NamesResponse.decode(bytes).names;
+      }
+
+      // ── Simulate fetchNames() with a mocked fetch ─────────────────────────────
+      async function fetchNames(mockFetch) {
+        const root = protobuf.parse(PROTO_SCHEMA).root;
+        const NamesResponse = root.lookupType("NamesResponse");
+        const res = await mockFetch();
+        const buffer = await res.arrayBuffer();
+        return NamesResponse.decode(new Uint8Array(buffer)).names;
+      }
+
+      // ═══════════════════════════════════════════════════════════════════════════
+      // Protobuf encoding / decoding tests
+      // ═══════════════════════════════════════════════════════════════════════════
+      QUnit.module("Protobuf codec", () => {
+
+        QUnit.test("encodes and decodes a list of names round-trip", (assert) => {
+          const original = ["Niam", "Mani", "Anim", "Main", "Amin"];
+          const bytes = encodeNames(original);
+          const decoded = decodeNames(bytes);
+          assert.deepEqual(decoded, original, "decoded names match original");
+        });
+
+        QUnit.test("encoded bytes are a non-empty Uint8Array", (assert) => {
+          const bytes = encodeNames(["Niam"]);
+          assert.ok(bytes instanceof Uint8Array, "result is Uint8Array");
+          assert.ok(bytes.length > 0, "result is non-empty");
+        });
+
+        QUnit.test("decodes empty names list without error", (assert) => {
+          const bytes = encodeNames([]);
+          const decoded = decodeNames(bytes);
+          assert.deepEqual(decoded, [], "empty list round-trips correctly");
+        });
+
+        QUnit.test("first name in default list is Niam", (assert) => {
+          const names = ["Niam", "Mani", "Anim", "Main", "Amin"];
+          const decoded = decodeNames(encodeNames(names));
+          assert.equal(decoded[0], "Niam", "first name is Niam");
+        });
+
+        QUnit.test("list contains exactly 5 names", (assert) => {
+          const names = ["Niam", "Mani", "Anim", "Main", "Amin"];
+          const decoded = decodeNames(encodeNames(names));
+          assert.equal(decoded.length, 5, "exactly 5 names");
+        });
+      });
+
+      // ═══════════════════════════════════════════════════════════════════════════
+      // fetchNames() — mocked fetch tests
+      // ═══════════════════════════════════════════════════════════════════════════
+      QUnit.module("fetchNames()", () => {
+
+        QUnit.test("returns decoded names from a mocked protobuf response", async (assert) => {
+          const expected = ["Niam", "Mani", "Anim", "Main", "Amin"];
+          const bytes = encodeNames(expected);
+
+          const mockFetch = () => Promise.resolve({
+            ok: true,
+            arrayBuffer: () => Promise.resolve(bytes.buffer),
+          });
+
+          const names = await fetchNames(mockFetch);
+          assert.deepEqual(names, expected, "fetchNames returns correct names");
+        });
+
+        QUnit.test("propagates error when fetch rejects", async (assert) => {
+          const mockFetch = () => Promise.reject(new Error("Network error"));
+          try {
+            await fetchNames(mockFetch);
+            assert.ok(false, "should have thrown");
+          } catch (e) {
+            assert.equal(e.message, "Network error", "error message propagated");
+          }
+        });
+      });
+
+      // ═══════════════════════════════════════════════════════════════════════════
+      // Button cycling logic tests
+      // ═══════════════════════════════════════════════════════════════════════════
+      QUnit.module("Name cycling logic", () => {
+
+        function nextIndex(current, total) {
+          return (current + 1) % total;
+        }
+
+        QUnit.test("advances index on each click", (assert) => {
+          assert.equal(nextIndex(0, 5), 1);
+          assert.equal(nextIndex(1, 5), 2);
+          assert.equal(nextIndex(4, 5), 0, "wraps back to 0 after last item");
+        });
+
+        QUnit.test("wraps around from last to first", (assert) => {
+          const names = ["Niam", "Mani", "Anim", "Main", "Amin"];
+          let idx = names.length - 1;
+          idx = nextIndex(idx, names.length);
+          assert.equal(names[idx], "Niam", "wraps to Niam");
+        });
+
+        QUnit.test("cycles through all names without repeating order", (assert) => {
+          const names = ["Niam", "Mani", "Anim", "Main", "Amin"];
+          const seen = [];
+          let idx = 0;
+          for (let i = 0; i < names.length; i++) {
+            seen.push(names[idx]);
+            idx = nextIndex(idx, names.length);
+          }
+          assert.deepEqual(seen, names, "visits every name in order");
+        });
+      });
+    </script>
+  </body>
+</html>

@@ -1,5 +1,6 @@
 package com.niamapp;
 
+import com.niamapp.proto.NiamProto;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,8 +15,11 @@ public class NiamController {
 
     private final List<String> names = List.of("Niam", "Mani", "Anim", "Main", "Amin");
 
-    @GetMapping("/names")
-    public List<String> getNames() {
-        return names;
+    @GetMapping(value = "/names", produces = "application/x-protobuf")
+    public byte[] getNames() {
+        NiamProto.NamesResponse response = NiamProto.NamesResponse.newBuilder()
+                .addAllNames(names)
+                .build();
+        return response.toByteArray();
     }
 }

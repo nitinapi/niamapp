@@ -6,7 +6,13 @@
       "Bash(cmd.exe /c \"java --version 2>&1 & mvn --version 2>&1\")",
       "Bash(powershell.exe -Command \"java --version; mvn --version; gradle --version\")",
       "Bash(mkdir -p c:/Users/initi/niamApp/backend/src/main/java/com/niamapp)",
-      "Bash(mkdir -p c:/Users/initi/niamApp/backend/src/main/resources)"
+      "Bash(mkdir -p c:/Users/initi/niamApp/backend/src/main/resources)",
+      "Bash(powershell.exe -Command \"java --version; mvn --version\")",
+      "Bash(powershell.exe -Command \"java --version 2>&1\")",
+      "Bash(powershell.exe -Command \"mvn --version 2>&1\")",
+      "Bash(powershell.exe -Command \"cd c:\\\\Users\\\\initi\\\\niamApp\\\\backend; mvn test 2>&1\")",
+      "Bash(powershell.exe -Command \"cd c:\\\\Users\\\\initi\\\\niamApp\\\\backend; mvn test -q 2>&1 | Select-String -Pattern ''ERROR|FAIL|Tests run|BUILD|Exception'' | Out-String\")",
+      "Bash(powershell.exe -Command \"cd c:\\\\Users\\\\initi\\\\niamApp\\\\backend; mvn test --no-transfer-progress 2>&1 | tail -60\")"
     ]
   }
 }

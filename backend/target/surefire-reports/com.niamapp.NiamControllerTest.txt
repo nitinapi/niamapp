@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.niamapp.NiamControllerTest
+-------------------------------------------------------------------------------
+Tests run: 5, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.967 s -- in com.niamapp.NiamControllerTest

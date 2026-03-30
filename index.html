@@ -7,6 +7,7 @@
     <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/protobufjs@7/dist/protobuf.min.js"></script>
     <style>
       * {
         box-sizing: border-box;
@@ -67,6 +68,28 @@
     <script type="text/babel">
       const API_URL = "http://localhost:8080/api/names";
 
+      // Proto schema mirrored from names.proto — must stay in sync with the backend
+      const PROTO_SCHEMA = `
+        syntax = "proto3";
+        message NamesResponse {
+          repeated string names = 1;
+        }
+      `;
+
+      async function fetchNames() {
+        const root = protobuf.parse(PROTO_SCHEMA).root;
+        const NamesResponse = root.lookupType("NamesResponse");
+
+        const res = await fetch(API_URL, {
+          headers: { Accept: "application/x-protobuf" },
+        });
+        if (!res.ok) throw new Error("Failed to fetch names");
+
+        const buffer = await res.arrayBuffer();
+        const decoded = NamesResponse.decode(new Uint8Array(buffer));
+        return decoded.names;
+      }
+
       function App() {
         const [names, setNames] = React.useState([]);
         const [nameIndex, setNameIndex] = React.useState(0);
@@ -74,11 +97,7 @@
         const [loading, setLoading] = React.useState(true);
 
         React.useEffect(() => {
-          fetch(API_URL)
-            .then((res) => {
-              if (!res.ok) throw new Error("Failed to fetch names");
-              return res.json();
-            })
+          fetchNames()
             .then((data) => {
               setNames(data);
               setLoading(false);
