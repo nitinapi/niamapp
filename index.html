@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Niam App</title>
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #f0f4f8;
+        font-family: 'Segoe UI', sans-serif;
+      }
+
+      .card {
+        background: white;
+        border-radius: 16px;
+        padding: 48px 64px;
+        text-align: center;
+        box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      }
+
+      h1 {
+        font-size: 2.5rem;
+        color: #1a202c;
+        margin-bottom: 32px;
+      }
+
+      h1 span {
+        color: #6366f1;
+      }
+
+      button {
+        padding: 12px 32px;
+        font-size: 1rem;
+        background: #6366f1;
+        color: white;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background 0.2s, transform 0.1s;
+      }
+
+      button:hover {
+        background: #4f46e5;
+      }
+
+      button:active {
+        transform: scale(0.97);
+      }
+    </style>
+  </head>
+  <body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+      const API_URL = "http://localhost:8080/api/names";
+
+      function App() {
+        const [names, setNames] = React.useState([]);
+        const [nameIndex, setNameIndex] = React.useState(0);
+        const [error, setError] = React.useState(null);
+        const [loading, setLoading] = React.useState(true);
+
+        React.useEffect(() => {
+          fetch(API_URL)
+            .then((res) => {
+              if (!res.ok) throw new Error("Failed to fetch names");
+              return res.json();
+            })
+            .then((data) => {
+              setNames(data);
+              setLoading(false);
+            })
+            .catch((err) => {
+              setError(err.message);
+              setLoading(false);
+            });
+        }, []);
+
+        function handleClick() {
+          setNameIndex((prev) => (prev + 1) % names.length);
+        }
+
+        const currentName = names[nameIndex] ?? "";
+
+        return (
+          <div className="card">
+            <h1>
+              {loading && <span style={{color:"#aaa"}}>Loading...</span>}
+              {error && <span style={{color:"#e53e3e"}}>API error</span>}
+              {!loading && !error && <span>{currentName}</span>}
+              {" App"}
+            </h1>
+            <button onClick={handleClick} disabled={loading || !!error || names.length === 0}>
+              Change Name
+            </button>
+            {error && (
+              <p style={{marginTop:"16px", fontSize:"0.85rem", color:"#e53e3e"}}>
+                Could not reach backend. Is the Java server running?
+              </p>
+            )}
+          </div>
+        );
+      }
+
+      const root = ReactDOM.createRoot(document.getElementById("root"));
+      root.render(<App />);
+    </script>
+  </body>
+</html>
